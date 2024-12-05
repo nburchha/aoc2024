@@ -1,101 +1,66 @@
 package main
 
 import (
-    "fmt"
-    "os"
-    "bufio"
-    "strings"
-    "strconv"
+	"bufio"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type Pair struct {
-    X int
-    Y int
+	X, Y int
 }
 
 func ParseInput(path string) ([]Pair, [][]int, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Println(err)
 		return nil, nil, err
 	}
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
 
+	scanner := bufio.NewScanner(file)
 	var pairs []Pair
+
 	for scanner.Scan() {
-		if scanner.Text() == "" {
-			fmt.Println("Empty line found")
+		line := scanner.Text()
+		if line == "" {
 			break
 		}
-		line := strings.Split(scanner.Text(), "|")
-		if len(line) < 2 {
+		parts := strings.Split(line, "|")
+		if len(parts) != 2 {
 			continue
 		}
-		x, err := strconv.Atoi(line[0])
-		if err != nil {
-			fmt.Println("Error converting string to int:", line[0])
-			return nil, nil, err
-		}
-		y, err := strconv.Atoi(line[1])
-		if err != nil {
-			fmt.Println("Error converting string to int:", line[1])
-			return nil, nil, err
-		}
-		pair := Pair{X: x, Y: y}
-		pairs = append(pairs, pair)
+		x, _ := strconv.Atoi(parts[0])
+		y, _ := strconv.Atoi(parts[1])
+		pairs = append(pairs, Pair{X: x, Y: y})
 	}
 
-	var list [][]int
-	i := 0
+	var matrix [][]int
 	for scanner.Scan() {
-		line := strings.Split(scanner.Text(), ",")
-		intLine := make([]int, len(line))
-		for i, str := range line {
-			num, err := strconv.Atoi(str)
-			if err != nil {
-				fmt.Println("Error converting string to int:", str)
-				return nil, nil, err
-			}
-			intLine[i] = num
+		line := scanner.Text()
+		if line == "" {
+			continue
 		}
-		list = append(list, intLine)
-		i += 1
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, nil, err
-	}
-
-	return pairs, list, nil
-}
-
-// func insertAt(slice []int, index int, values ...int) []int {
-//     if index < 0 || index > len(slice) {
-//         panic("index out of range")
-//     }
-//     return append(slice[:index], append(values, slice[index:]...)...)
-// }
-
-func swapWithIndex(slice []int, index1, index2 int) {
-    if index1 >= 0 && index1 < len(slice) && index2 >= 0 && index2 < len(slice) {
-        slice[index1], slice[index2] = slice[index2], slice[index1]
-    }
-}
-
-func checkNum(pair Pair, pairs []Pair) bool {
-	for _, p := range pairs {
-		if p.X == pair.Y && p.Y == pair.X {
-			return false
+		parts := strings.Split(line, ",")
+		update := make([]int, len(parts))
+		for i, num := range parts {
+			update[i], _ = strconv.Atoi(num)
 		}
+		matrix = append(matrix, update)
 	}
-	return true
+
+	return pairs, matrix, nil
 }
 
 func validLine(line []int, pairs []Pair) bool {
+	index := make(map[int]int)
 	for i, num := range line {
-		for j:=0;j<i;j++ {
-			if !checkNum(Pair{line[j], num}, pairs) {
+		index[num] = i
+	}
+	for _, pair := range pairs {
+		if idxX, okX := index[pair.X]; okX {
+			if idxY, okY := index[pair.Y]; okY && idxX > idxY {
 				return false
 			}
 		}
@@ -103,50 +68,75 @@ func validLine(line []int, pairs []Pair) bool {
 	return true
 }
 
-func checkLine(line []int, pairs []Pair) int {
-    for {
-        if validLine(line, pairs) {
-            break
-        }
-        for i, num := range line {
-            valid := true
-            for j := 0; j < i; j++ {
-                if !checkNum(Pair{line[j], num}, pairs) {
-                    valid = false
-                    swapWithIndex(line, i, j)
-                }
-            }
-            if valid {
-                line = append(line, num)
-            }
-        }
-    }
-    // Return the middle number of the line
-    middleIndex := len(line) / 2
-    return line[middleIndex]
+func reorderLine(line []int, pairs []Pair) []int {
+	graph := make(map[int][]int)
+	inDegree := make(map[int]int)
+
+	for _, num := range line {
+		graph[num] = []int{}
+		inDegree[num] = 0
+	}
+	for _, pair := range pairs {
+		if contains(line, pair.X) && contains(line, pair.Y) {
+			graph[pair.X] = append(graph[pair.X], pair.Y)
+			inDegree[pair.Y]++
+		}
+	}
+
+	var sorted []int
+	queue := []int{}
+	for num, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, num)
+		}
+	}
+	for len(queue) > 0 {
+		node := queue[0]
+		queue = queue[1:]
+		sorted = append(sorted, node)
+		for _, neighbor := range graph[node] {
+			inDegree[neighbor]--
+			if inDegree[neighbor] == 0 {
+				queue = append(queue, neighbor)
+			}
+		}
+	}
+	return sorted
 }
 
-func iterateMatrix(matrix [][]int, pairs []Pair) int {
-	count := 0
-	for _, line := range matrix {
-		count = checkLine(line, pairs)
+func contains(slice []int, value int) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
 	}
-	return count
+	return false
+}
+
+func iterateMatrix(matrix [][]int, pairs []Pair) (int, int) {
+	sum1 := 0
+	sum2 := 0
+	for _, line := range matrix {
+		if !validLine(line, pairs) {
+			line = reorderLine(line, pairs)
+			mid := len(line) / 2
+			sum2 += line[mid]
+		} else {
+			mid := len(line) / 2
+			sum1 += line[mid]
+		}
+	}
+	return sum1, sum2
 }
 
 func main() {
-    pairs, matrix, err := ParseInput("input/testinput5.txt")
-    if err != nil {
-        fmt.Println("Error:", err)
-        return
-    }
-    for _, pair := range pairs {
-        fmt.Printf("X: %d, Y: %d\n", pair.X, pair.Y)
-    }
-	for _, line := range matrix {
-		fmt.Println(line)
+	pairs, matrix, err := ParseInput("input/day05.txt")
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
 	}
 
-	//iterate over each list in matrix and check
-	fmt.Println(iterateMatrix(matrix, pairs))
+	part1, part2 := iterateMatrix(matrix, pairs)
+	fmt.Println("Sum of corrected middle values (part2):", part1)
+	fmt.Println("Sum of corrected middle values (part2):", part2)
 }
