@@ -38,13 +38,13 @@ func main() {
 	var nums []int
 	for _, word := range words {
 		num, _ := strconv.Atoi(word)
-		nums = append(nums, int(num))
+		nums = append(nums, num)
 	}
 
 	totalCount := 0
 
 	for _, startNum := range nums {
-		totalCount += recIter(int(startNum), 0)
+		totalCount += recIter(startNum, 0)
 	}
 
 	fmt.Println("Total vals after",maxDepth,"blinks:",totalCount)
