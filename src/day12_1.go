@@ -25,7 +25,6 @@ func checkSurroundings(grid []string, row, col int) int {
 				count++
 			}
 		} else {
-			// fmt.Println("checkSurroundings", (string)(grid[row][col]), "row:",row,"col:",col, dir)
 			count++
 		}
 	}
