@@ -2,8 +2,40 @@ package main
 
 import (
 	"fmt"
-	"aoc2024/utils"
+	"bufio"
+	"os"
+	"strconv"
+	"strings"
 )
+
+func parseInput(path string) ([][]int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+
+	var result [][]int
+	for scanner.Scan() {
+		line := strings.Split(scanner.Text(), " ")
+		intLine := make([]int, len(line))
+		for i, str := range line {
+			num, err := strconv.Atoi(str)
+			if err != nil {
+				fmt.Println("Error converting string to int:", str)
+				return nil, err
+			}
+			intLine[i] = num
+		}
+		result = append(result, intLine)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+	return result, nil
+}
 
 func removeElement(slice []int, index int) []int {
 	newSlice := make([]int, 0, len(slice)-1)
@@ -61,7 +93,7 @@ func processInput(input [][]int) {
 }
 
 func main() {
-	input, err := utils.ParseInput("input/day02.txt")
+	input, err := parseInput("input/day02.txt")
 	if err != nil {
 		fmt.Println("Error parsing input:", err)
 		return

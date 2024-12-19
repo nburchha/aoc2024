@@ -12,14 +12,12 @@ type Side struct {
 }
 
 var seen = make(map[[2]int]byte)
-var directions = [][2]int{
+var directions = [][]int{
 	{-1, 0}, // Up
 	{1, 0},  // Down
 	{0, -1}, // Left
 	{0, 1},  // Right
 }
-
-// 0 top 1 right 2 down 3 left
 
 func checkDir(grid []string, row, col, dir int, plantType byte) bool {
 	switch dir {
@@ -84,17 +82,14 @@ func sideExists(side Side, sides []Side) bool {
 	return false
 }
 
-func checkSurroundings(grid []string, row, col int, sides []Side) []Side {
+func checkSurroundings2(grid []string, row, col int, sides []Side) []Side {
 	plantType := grid[row][col]
 	for i:=0;i<4;i++ {
 		side, err := getSide(grid, row, col, i, plantType)
 		if err != nil {
-			// fmt.Println(err)
 			continue
 		}
 		if !sideExists(side, sides) {
-			fmt.Println("side doesnt exist yet:",side)
-			// fmt.Println("current sides:",sides)
 			sides = append(sides, side)
 		}
 	}
@@ -102,7 +97,7 @@ func checkSurroundings(grid []string, row, col int, sides []Side) []Side {
 }
 
 
-func getCostOfArea(grid []string, row, col int, plantType byte, sides []Side) (int, []Side) {
+func getCostOfArea2(grid []string, row, col int, plantType byte, sides []Side) (int, []Side) {
 	if sides == nil {
 		sides = []Side{}
 	}
@@ -115,24 +110,21 @@ func getCostOfArea(grid []string, row, col int, plantType byte, sides []Side) (i
 	var count int
 	for _, dir := range directions {
 
-		tmpCount, tmpSides := getCostOfArea(grid, row+dir[0], col+dir[1], plantType, sides)
+		tmpCount, tmpSides := getCostOfArea2(grid, row+dir[0], col+dir[1], plantType, sides)
 		count += tmpCount
 		sides = tmpSides
 	}
 
-	sides = checkSurroundings(grid, row, col, sides)
+	sides = checkSurroundings2(grid, row, col, sides)
 	return count+1, sides
 }
 
-func iterateGrid(grid []string) int {
+func iterateGrid2(grid []string) int {
 	var totalCount int
 	for row := range grid {
 		for col := range grid[row] {
-			count, sides := getCostOfArea(grid, row, col, grid[row][col], nil)
+			count, sides := getCostOfArea2(grid, row, col, grid[row][col], nil)
 			totalCount += len(sides) * count
-			if len(sides) > 0 {
-				fmt.Println((string)(grid[row][col]),":",len(sides),count)
-			}
 		}
 	}
 	return totalCount
@@ -143,5 +135,5 @@ func main() {
 	// input, _ := os.ReadFile("input/testinput12")
 	split := strings.Split(strings.TrimSpace(string(input)), "\n\n")
 	lines := strings.Split(split[0], "\n")
-	fmt.Println(iterateGrid(lines))
+	fmt.Println(iterateGrid2(lines))
 }
