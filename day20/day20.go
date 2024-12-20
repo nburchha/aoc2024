@@ -8,8 +8,8 @@ import (
 
 const (
 	SIZE = 71
-	// FILE = "input/day20.txt"
-	FILE = "input/testinput20"
+	FILE = "input/day20.txt"
+	// FILE = "input/testinput20"
 )
 
 type point struct{r, c int}
@@ -58,6 +58,21 @@ func main() {
 			}
 		}
 	}
-	fmt.Println(startPoint, endPoint)
-	fmt.Println(bfs(grid, startPoint, endPoint))
+	var count int
+	originalTime := bfs(grid, startPoint, endPoint)
+	fmt.Println("original:", originalTime)
+	for row, line := range grid {
+		for col, char := range line {
+			if char == '#' {
+				grid[row] = grid[row][:col] + "." + grid[row][col+1:]
+				time := bfs(grid, startPoint, endPoint)
+				if originalTime - time >= 100 {
+					count++
+					// fmt.Println(time)
+				}
+				grid[row] = grid[row][:col] + "#" + grid[row][col+1:]
+			}
+		}
+	}
+	fmt.Println("count:", count)
 }
